@@ -7,8 +7,8 @@
 <meta name="description" content="El fútbol de clavos de toda la vida, ahora en tu celular. Jugá contra un amigo, contra la máquina u online.">
 <meta name="theme-color" content="#011C25">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="../assets/favicon.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="./favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Futbolito">
@@ -18,8 +18,8 @@
 <meta property="og:description" content="El fútbol de clavos de toda la vida, ahora en tu celular. Jugá contra un amigo, contra la máquina u online.">
 <meta property="og:image" content="share.png">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" href="../assets/archivo.woff2" as="font" type="font/woff2" crossorigin>
-<style>@font-face{font-family:"Archivo";src:url("../assets/archivo.woff2") format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:swap}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html,body{margin:0}body{font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preload" href="./archivo.woff2" as="font" type="font/woff2" crossorigin>
+<style>@font-face{font-family:"Archivo";src:url("./archivo.woff2") format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:swap}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html,body{margin:0}body{font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
 
@@ -378,7 +378,7 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
           <button class="btn ghost" id="bRank">Ranking<small>Tabla de la clasificatoria</small></button>
           <button class="btn ghost" id="bCPU">Contra la máquina<small>1 jugador · 3 niveles</small></button>
           <button class="btn ghost" id="bInvite" type="button">Invitar a un amigo<small>Mandale el link del juego</small></button>
-          <a class="btn ghost" href="../" style="text-decoration:none">Más juegos<small>Juegos Súper Fútbol</small></a>
+          <a class="btn ghost" href="./" style="text-decoration:none">Más juegos<small>Juegos Súper Fútbol</small></a>
           <button class="btn ghost" id="bData">Datos de prueba<small id="dataCount">Guía, resultados y encuestas</small></button>
         </div>
         <p class="note">Arrastrá hacia atrás, como taco de billar, y soltá para tirar.</p>
@@ -1893,7 +1893,7 @@ $("bSound").onclick = () => { S.sound = !S.sound; $("sndWave").style.display = S
 
 // =================== ONLINE (Supabase) ===================
 const SB = { url: "https://goklhzerstkkaehmpfyg.supabase.co", key: "sb_publishable_re4ecoplq9VsrbgVHh1Epw_xo0rpZit",
-  js: "../assets/supabase.js" };
+  js: "./supabase.js" };
 const OL = (() => {
   let sb = null, chan = null, poll = null, me = null, waitT0 = 0, clockOff = 0, ending = false, lastRow = null;
   const ACTIVE = "futbolito-partida";
@@ -2479,7 +2479,7 @@ function clearTalk(){ talkOpen(false); $("bubL").innerHTML = ""; $("bubR").inner
 
 // ---------- Compartir ----------
 const GAME_URL = "https://superfutbol.live/juegos/futbolito/";
-function gameUrl(){ try { if (/^https?:$/.test(location.protocol) && /superfutbol\.live$/.test(location.hostname)) return location.origin + location.pathname.replace(/index\.html$/, ""); } catch(e) {} return GAME_URL; }
+function gameUrl(){ try { if (/^https?:$/.test(location.protocol) && /(superfutbol\.live|github\.io)$/.test(location.hostname)) return location.origin + location.pathname.replace(/index\.html$/, ""); } catch(e) {} return GAME_URL; }
 function fitText(g, txt, max, size, weight, stretch){
   let fs = size; g.font = `${weight} ${fs}px Archivo, "Arial Black", Arial, sans-serif`; try { g.fontStretch = stretch || "normal"; } catch(e) {}
   while (g.measureText(txt).width > max && fs > 20) { fs -= 2; g.font = `${weight} ${fs}px Archivo, "Arial Black", Arial, sans-serif`; }

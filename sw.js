@@ -1,7 +1,7 @@
-// Futbolito Súper Fútbol · versión 1.6.0
-const CACHE = "futbolito-1.6.0";
-const FILES = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png",
-  "icons/maskable-512.png", "icons/apple-touch-icon.png", "../assets/archivo.woff2", "../assets/favicon.png"];
+// Futbolito Súper Fútbol · versión 1.6.1
+const CACHE = "futbolito-1.6.1";
+const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png",
+  "maskable-512.png", "apple-touch-icon.png", "archivo.woff2", "favicon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("futbolito-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
