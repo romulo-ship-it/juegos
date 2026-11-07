@@ -336,6 +336,17 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
 .stats div{background:rgba(255,255,255,.05);border-radius:12px;padding:10px 4px}
 .stats b{display:block;font-size:1.35rem;font-weight:800;font-variant-numeric:tabular-nums}
 .stats span{font-size:.72rem;opacity:.6}
+/* ficha del aficionado */
+.panel select{width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:1rem;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 20px) 55%,calc(100% - 14px) 55%;background-size:6px 6px;background-repeat:no-repeat}
+.panel select option{color:#011C25}
+#fWa,#fOtro,#oEmail,#oOtp,#oCode{box-sizing:border-box;width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:1rem}
+.ojoin #oEmail,.ojoin #oOtp,.ojoin #oCode{margin-top:0}
+.seg-wrap{flex-wrap:wrap}.seg-wrap button{flex:1 0 30%}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:.86rem;line-height:1.35;opacity:.9;text-transform:none;letter-spacing:0;font-weight:500}
+.chk input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--paint)}
+.linkbtn{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.privacy p{font-size:.88rem;line-height:1.45;margin:0;opacity:.9}
+#fStatus{color:rgba(227,232,234,.8);font-weight:500}
 #survey,#sendBox,#bData{display:none!important}
 </style>
 
@@ -495,12 +506,12 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
           <div class="row ojoin"><input type="text" id="oCode" maxlength="6" placeholder="Código" autocapitalize="characters" autocomplete="off" aria-label="Código de sala"><button class="btn ghost" id="oJoin" type="button">Unirme</button></div>
         </div>
         <div class="oblock">
-          <div class="ohead"><b>Clasificatoria</b><span>Con cuenta · a 3 goles · suma al ranking</span></div>
+          <div class="ohead"><b>Clasificatoria</b><span>Con cuenta · a 3 goles · suma al ranking · entrás a sorteos</span></div>
           <div id="oAcct">
             <div class="row ojoin"><input type="email" id="oEmail" placeholder="Tu correo" autocomplete="email" aria-label="Correo"><button class="btn ghost" id="oSend" type="button">Pedir código</button></div>
             <div class="row ojoin" id="oOtpRow" hidden><input type="text" id="oOtp" inputmode="numeric" maxlength="8" placeholder="Código del correo" autocomplete="one-time-code" aria-label="Código del correo"><button class="btn ghost" id="oVerify" type="button">Entrar</button></div>
           </div>
-          <div id="oRankedBox" hidden><p class="note" id="oWho"></p><div class="row"><button class="btn" id="oRanked" type="button">Buscar rival</button><button class="btn ghost" id="oSignOut" type="button">Salir de la cuenta</button></div></div>
+          <div id="oRankedBox" hidden><p class="note" id="oWho"></p><div class="row"><button class="btn" id="oRanked" type="button">Buscar rival</button><button class="btn ghost" id="oFan" type="button">Mi ficha</button></div><button class="btn ghost" id="oSignOut" type="button">Salir de la cuenta</button></div>
         </div>
         <div class="status" id="oStatus" aria-live="polite"></div>
         <button class="btn" id="oResume" type="button" hidden>Volver a mi partida</button>
@@ -532,6 +543,40 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
         <div class="rankwrap"><table class="rank" id="rankTable"></table></div>
         <div class="status" id="rStatus" aria-live="polite"></div>
         <button class="btn ghost" id="rBack" type="button">Volver</button>
+      </div>
+    </section>
+
+    <!-- FICHA DEL AFICIONADO -->
+    <section class="sheet" id="scrFan" hidden>
+      <div class="panel narrow">
+        <h2>Tu ficha de aficionado</h2>
+        <p class="note">Completala una vez y entrás a los sorteos de Súper Fútbol.</p>
+        <label class="f" for="fTeam">Aficionado de<select id="fTeam"></select></label>
+        <label class="f" for="fDep">Dónde vivís<select id="fDep"></select></label>
+        <label class="f" for="fOtro" id="fOtroRow" hidden>Escribí dónde vivís<input type="text" id="fOtro" maxlength="40" placeholder="Ciudad y país"></label>
+        <h3>Edad</h3>
+        <div class="seg seg-wrap" id="fAge" role="group" aria-label="Edad"></div>
+        <label class="f" for="fWa" id="fWaRow">WhatsApp<input type="tel" id="fWa" inputmode="tel" autocomplete="tel" placeholder="7777 7777" maxlength="16"></label>
+        <label class="chk"><input type="checkbox" id="fPromo"><span>Quiero participar en los sorteos y recibir novedades y promociones de Súper Fútbol por WhatsApp o correo.</span></label>
+        <label class="chk"><input type="checkbox" id="fPriv"><span>Acepto el <button type="button" class="linkbtn" id="fPrivLink">aviso de privacidad</button>.</span></label>
+        <div class="status" id="fStatus" aria-live="polite"></div>
+        <button class="btn" id="fSave" type="button">Guardar mi ficha</button>
+        <button class="btn ghost" id="fBack" type="button">Volver</button>
+      </div>
+    </section>
+
+    <!-- AVISO DE PRIVACIDAD -->
+    <section class="sheet" id="scrPrivacy" hidden>
+      <div class="panel narrow privacy">
+        <h2>Aviso de privacidad</h2>
+        <p><b>Quién guarda tus datos.</b> Súper Fútbol El Salvador, para el juego Futbolito Súper Fútbol.</p>
+        <p><b>Qué guardamos.</b> Tu correo (con él entrás a tu cuenta), el nombre que escogés para jugar, tu equipo del juego, de qué equipo sos aficionado, dónde vivís, tu rango de edad y, si lo das, tu WhatsApp. También guardamos tus partidas online y tus resultados.</p>
+        <p><b>Para qué.</b> Para que tengas cuenta, aparezcas en el ranking (solo con el nombre que escogiste), evitar trampas y, si marcaste la casilla, invitarte a sorteos y mandarte novedades y promociones de Súper Fútbol.</p>
+        <p><b>Con quién.</b> No vendemos ni compartimos tus datos con otras empresas. Las promociones de patrocinadores te las mandamos nosotros. Los datos se guardan en servidores de nuestros proveedores tecnológicos (Supabase), que solo los procesan para que el juego funcione.</p>
+        <p><b>Menores de edad.</b> Si tenés entre 13 y 17 años no te pedimos WhatsApp ni participás en sorteos.</p>
+        <p><b>Tus derechos.</b> Podés cambiar tu ficha cuando querás desde Jugar online, dejar de recibir mensajes cuando querás, y pedir que borremos tu cuenta y tus datos escribiéndonos por los canales oficiales de Súper Fútbol.</p>
+        <p class="note">Versión de noviembre de 2026.</p>
+        <button class="btn" id="pBack" type="button">Volver</button>
       </div>
     </section>
     <!-- DATOS DE PRUEBA -->
@@ -1737,7 +1782,7 @@ cv.addEventListener("pointerup", e => endDrag(e, false));
 cv.addEventListener("pointercancel", e => endDrag(e, true));
 
 // ---------- Pantallas ----------
-const SHEETS = ["scrHome","scrSetup","scrToss","scrPause","scrMsg","scrEnd","scrData","scrShare","scrOnline","scrLobby","scrRank"];
+const SHEETS = ["scrHome","scrSetup","scrToss","scrPause","scrMsg","scrEnd","scrData","scrShare","scrOnline","scrLobby","scrRank","scrFan","scrPrivacy"];
 function show(id){ SHEETS.forEach(s => $(s).hidden = s !== id); }
 let msgCb = null;
 function msg(t, p, b, cb){ $("msgT").textContent = t; $("msgP").textContent = p; $("msgB").textContent = b; msgCb = cb; show("scrMsg"); $("msgB").focus(); }
@@ -1913,6 +1958,8 @@ const OL = (() => {
   async function session(){ const c = await client(); const { data } = await c.auth.getSession(); return data.session; }
   async function ensureGuest(){
     const c = await client(); let s = await session();
+    // si la sesión guardada ya no existe en el servidor, se empieza una nueva
+    if (s) { const { error } = await c.auth.getUser(); if (error) { try { await c.auth.signOut({ scope: "local" }); } catch(e) {} s = null; } }
     if (!s) { const { data, error } = await c.auth.signInAnonymously(); if (error) throw error; s = data.session; }
     return s;
   }
@@ -2056,6 +2103,7 @@ const OL = (() => {
   }
   async function ranked(){
     const s = await session(); if (isGuest(s)) throw new Error("La clasificatoria pide cuenta");
+    if (!myFan && !(await loadFan())) return openFan(ranked);
     await ensureProfile();
     const c = await client(); const { data, error } = await c.rpc("find_ranked");
     if (error) throw error; lobby(data, "Clasificatoria"); await watch(data);
@@ -2066,11 +2114,12 @@ const OL = (() => {
     const c = await client(); const { error } = await c.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: back } });
     if (error) throw error;
     $("oOtpRow").hidden = false; $("oOtp").focus();
-    st("oStatus", "Revisá " + email + ": tocá el link del correo en este mismo cel, o escribí aquí el código si te llegó uno.");
+    st("oStatus", "Te mandamos un código a " + email + ". Escribilo aquí abajo (revisá también la carpeta de spam).");
   }
   async function verify(){
     const c = await client(); const { error } = await c.auth.verifyOtp({ email: $("oEmail").value.trim(), token: $("oOtp").value.trim(), type: "email" });
-    if (error) throw error; st("oStatus", "¡Listo! Ya podés jugar la clasificatoria."); await refreshAcct();
+    if (error) throw error; await refreshAcct();
+    if (!(await loadFan())) return openFan(); st("oStatus", "¡Listo! Ya podés jugar la clasificatoria.");
   }
   async function leaderboard(){
     show("scrRank"); st("rStatus", "Cargando…"); $("rankTable").innerHTML = "";
@@ -2243,6 +2292,54 @@ const OL = (() => {
     open();
   }
 
+  // ---------- ficha del aficionado ----------
+  const DEPS = ["Ahuachapán","Cabañas","Chalatenango","Cuscatlán","La Libertad","La Paz","La Unión","Morazán","San Miguel","San Salvador","San Vicente","Santa Ana","Sonsonate","Usulután","Estados Unidos","Otro"];
+  const AGES = ["13-17","18-24","25-34","35-44","45-54","55+"];
+  let fanAge = null, fanNext = null, myFan = null;
+  function fanForm(f){
+    $("fTeam").innerHTML = '<option value="">Escogé tu equipo</option>' + CLUBS.map(c => `<option value="${c.id}">${c.name}</option>`).join("") + '<option value="seleccion">Solo la Selecta</option>';
+    $("fDep").innerHTML = '<option value="">Escogé tu departamento o país</option>' + DEPS.map(d => `<option>${d}</option>`).join("");
+    $("fDep").onchange = () => { $("fOtroRow").hidden = $("fDep").value !== "Otro"; if (!$("fOtroRow").hidden) $("fOtro").focus(); };
+    $("fAge").innerHTML = AGES.map(a => `<button type="button" data-a="${a}" aria-pressed="false">${a === "55+" ? "55 o más" : a}</button>`).join("");
+    $("fAge").querySelectorAll("button").forEach(b => b.onclick = () => setAge(b.dataset.a));
+    $("fTeam").value = f ? f.heart_team : ""; $("fDep").value = f ? f.departamento : ""; $("fOtro").value = f && f.lugar_otro ? f.lugar_otro : ""; $("fOtroRow").hidden = !f || f.departamento !== "Otro";
+    $("fWa").value = f && f.whatsapp ? f.whatsapp.replace(/^\+503/, "") : "";
+    $("fPromo").checked = f ? f.accepts_promos : false; $("fPriv").checked = !!f;
+    setAge(f ? f.age_range : null); st("fStatus", "");
+  }
+  function setAge(a){
+    fanAge = a; const minor = a === "13-17";
+    $("fAge").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.a === a)));
+    $("fWaRow").hidden = minor; $("fPromo").closest("label").hidden = minor;
+  }
+  async function loadFan(){
+    const c = await client(); const s = await session(); if (!s || isGuest(s)) return null;
+    const { data } = await c.from("fans").select("*").eq("id", s.user.id).maybeSingle(); myFan = data || null; return myFan;
+  }
+  async function openFan(next){ fanNext = next || null; fanForm(myFan); show("scrFan"); try { const f = await loadFan(); if (f) fanForm(f); } catch(e) {} }
+  async function saveFan(){
+    if (!$("fTeam").value) throw new Error("Escogé de qué equipo sos aficionado");
+    if (!$("fDep").value) throw new Error("Escogé dónde vivís");
+    if ($("fDep").value === "Otro" && $("fOtro").value.trim().length < 2) throw new Error("Escribí dónde vivís");
+    if (!fanAge) throw new Error("Escogé tu rango de edad");
+    const wa = $("fWa").value.replace(/[^0-9+]/g, "");
+    if (fanAge !== "13-17" && wa && !/^(\+?[0-9]{8,15})$/.test(wa)) throw new Error("Revisá tu número de WhatsApp");
+    if (fanAge !== "13-17" && $("fPromo").checked && !wa) throw new Error("Para los sorteos necesitamos tu WhatsApp");
+    if (!$("fPriv").checked) throw new Error("Necesitás aceptar el aviso de privacidad");
+    await ensureProfile();
+    const c = await client();
+    const { data, error } = await c.rpc("save_fan", { p_heart_team: $("fTeam").value, p_departamento: $("fDep").value, p_age_range: fanAge,
+      p_whatsapp: wa || null, p_accepts_privacy: true, p_accepts_promos: $("fPromo").checked, p_lugar_otro: $("fDep").value === "Otro" ? $("fOtro").value.trim() : null });
+    if (error) throw error; myFan = data;
+    if (fanNext) { const n = fanNext; fanNext = null; show("scrOnline"); return n(); }
+    show("scrOnline"); st("oStatus", "¡Ficha guardada!" + (data.accepts_promos ? " Ya estás en los sorteos." : ""));
+  }
+  $("fSave").onclick = e => { const b = e.currentTarget; b.disabled = true; saveFan().catch(x => st("fStatus", err(x), true)).finally(() => b.disabled = false); };
+  $("fBack").onclick = () => { fanNext = null; show("scrOnline"); };
+  $("fPrivLink").onclick = () => show("scrPrivacy");
+  $("pBack").onclick = () => show("scrFan");
+  $("oFan").onclick = () => openFan();
+
   // ---------- botones ----------
   $("bOnline").onclick = () => open();
   $("bRank").onclick = () => { leaderboard(); loadStats(); };
@@ -2254,7 +2351,7 @@ const OL = (() => {
   $("oSend").onclick = e => busy(e.currentTarget, sendCode);
   $("oVerify").onclick = e => busy(e.currentTarget, verify);
   $("oRanked").onclick = e => busy(e.currentTarget, ranked);
-  $("oSignOut").onclick = e => busy(e.currentTarget, async () => { const c = await client(); await c.auth.signOut(); await refreshAcct(); st("oStatus", "Saliste de la cuenta."); });
+  $("oSignOut").onclick = e => busy(e.currentTarget, async () => { const c = await client(); await c.auth.signOut(); myFan = null; await refreshAcct(); st("oStatus", "Saliste de la cuenta."); });
   $("lCancel").onclick = () => cancelLobby();
   $("lCopy").onclick = () => { const t = $("lCode").textContent; try { navigator.clipboard.writeText(t); st("lStatus", "Código copiado"); } catch(e) {} };
   $("bClaim").onclick = () => claim();
@@ -2270,7 +2367,7 @@ const OL = (() => {
   // volver del link del correo: la sesión viene en la dirección
   try { if (/access_token=|code=|error_description=/.test(location.hash + location.search) && !/sala=/.test(location.search)) setTimeout(async () => {
     await open(); const s = await session();
-    if (s && !isGuest(s)) st("oStatus", "¡Listo! Ya entraste con " + (s.user.email || "tu cuenta") + ". Tocá Buscar rival.");
+    if (s && !isGuest(s)) { if (!(await loadFan())) openFan(); else st("oStatus", "¡Listo! Ya entraste con " + (s.user.email || "tu cuenta") + ". Tocá Buscar rival."); }
     else if (/error_description=/.test(location.hash)) st("oStatus", "El link ya venció. Pedí uno nuevo.", true);
     try { history.replaceState(null, "", location.pathname); } catch(e) {}
   }, 300); } catch(e) {}
