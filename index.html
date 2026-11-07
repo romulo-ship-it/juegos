@@ -347,6 +347,11 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
 .linkbtn{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
 .privacy p{font-size:.88rem;line-height:1.45;margin:0;opacity:.9}
 #fStatus{color:rgba(227,232,234,.8);font-weight:500}
+/* clip del gol */
+#bClip{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:7;width:auto;padding:12px 16px;font-size:.95rem;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+#clipBox{position:absolute;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:8;background:rgba(6,20,26,.94);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;align-items:center;min-width:260px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+#clipBox .row{gap:8px;flex-wrap:nowrap}#clipBox .btn{width:auto;padding:10px 14px}
+#clipMsg{font-size:.9rem;font-weight:600}
 #survey,#sendBox,#bData{display:none!important}
 </style>
 
@@ -368,6 +373,8 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
     </div>
     <div id="hint" hidden></div>
     <button class="btn" id="bClaim" type="button" hidden>Reclamar victoria</button>
+    <button class="btn" id="bClip" type="button" hidden>🎬 Guardar mi gol</button>
+    <div id="clipBox" hidden><span id="clipMsg">Armando tu gol…</span><div class="row" id="clipActs" hidden><button class="btn" id="clipShare" type="button">Compartir</button><a class="btn ghost" id="clipSave" download>Guardar</a><button class="btn ghost" id="clipClose" type="button" aria-label="Cerrar">✕</button></div></div>
     <div id="talk" hidden>
       <div class="talkwho" id="talkWho" role="group" aria-label="Quién habla"></div>
       <div class="reacts" id="reacts"></div>
@@ -954,11 +961,11 @@ function neon(path, col, width, blur){
 let neonCache = null;
 function drawBoardNeon(){
   const L=C.L, W=C.W, g0=FC.gy0(), g1=FC.gy1(), t=performance.now()/1000;
-  const key = [cv.width, cv.height, V.a, V.b, V.c, V.d, V.dpr].map(v => +v.toFixed ? v.toFixed(4) : v).join("|");
+  const key = [ctx.canvas.width, ctx.canvas.height, V.a, V.b, V.c, V.d, V.dpr].map(v => +v.toFixed ? v.toFixed(4) : v).join("|");
   const ready = ADS.every(a => a.img.complete && (!a.light || a.light.complete)) && IMG_SF.complete && IMG_MAJE.complete;
   if (!neonCache || neonCache.key !== key || (neonCache.partial && ready)) {
     // la parte que no se mueve se dibuja una sola vez (las sombras de neón son caras)
-    const off = document.createElement("canvas"); off.width = cv.width; off.height = cv.height;
+    const off = document.createElement("canvas"); off.width = ctx.canvas.width; off.height = ctx.canvas.height;
     const main = ctx; ctx = off.getContext("2d");
     const k = V.dpr; ctx.setTransform(V.a*k, V.b*k, V.c*k, V.d*k, V.e*k, V.f*k);
     drawNeonStatic(L, W, g0, g1);
@@ -1058,10 +1065,10 @@ function drawClubLights(){
 let classicCache = null;
 function drawBoard(){
   const L=C.L, W=C.W, g0=FC.gy0(), g1=FC.gy1();
-  const key = [cv.width, cv.height, V.a, V.b, V.c, V.d, V.dpr].map(v => v.toFixed(4)).join("|");
+  const key = [ctx.canvas.width, ctx.canvas.height, V.a, V.b, V.c, V.d, V.dpr].map(v => v.toFixed(4)).join("|");
   const ready = ADS.every(a => a.img.complete && (!a.light || a.light.complete)) && IMG_SF.complete && IMG_MAJE.complete;
   if (!classicCache || classicCache.key !== key || (classicCache.partial && ready)) {
-    const off = document.createElement("canvas"); off.width = cv.width; off.height = cv.height;
+    const off = document.createElement("canvas"); off.width = ctx.canvas.width; off.height = ctx.canvas.height;
     const main = ctx; ctx = off.getContext("2d"); woodPat = null; grassPat = null;
     const k = V.dpr; ctx.setTransform(V.a*k, V.b*k, V.c*k, V.d*k, V.e*k, V.f*k);
     drawClassicStatic();
@@ -1600,6 +1607,7 @@ function nextTurn(){ S.active = 1 - S.active; beginTurn(false); }
 
 function fire(angle, power){
   if (S.phase !== "aim") return;
+  CLIP.hideOffer();
   if (!(power > 0.03) || !isFinite(angle)) return;
   S.shotKick = Math.abs(S.ball.x - C.L/2) < 1e-6 && Math.abs(S.ball.y - C.W/2) < 1e-6;
   if (S.online) OL.fired(angle, power);
@@ -1630,6 +1638,7 @@ function onGoal(which){
   const now0 = performance.now(), pts = (S.path || []).slice(-70);
   const hasReplay = pts.length > 8 && !REDUCE();
   S.replay = hasReplay ? { pts, t0: now0 + 1500, dur: 2300 } : null;
+  CLIP.offer(scorer, which);
   if (hasReplay) setTimeout(() => { if (S.phase === "goal" && S.replay) { fx.hidden = true; hint("Repetición · tocá para seguir"); } }, 1500);
   let done = false;
   const cont = () => { if (done) return; done = true; clearTimeout(S.goalTimer); S.goalSkip = null; S.replay = null; fx.hidden = true;
@@ -1956,6 +1965,162 @@ function toMenu(){ if (S.online) OL.close(); clearTalk(); S.aiTok = (S.aiTok || 
 $("bSound").onclick = () => { S.sound = !S.sound; $("sndWave").style.display = S.sound ? "" : "none"; $("bSound").setAttribute("aria-label", S.sound ? "Silenciar sonido" : "Activar sonido"); };
 
 
+
+// =================== CLIP DEL GOL (video vertical para historias) ===================
+// Logo de patrocinador para el cierre del clip: { name: "Marca", img: "data:image/..." } o null
+const CLIP_SPONSOR = null;
+const CLIP = (() => {
+  const W = 720, H = 1280, FPS = 30;
+  let last = null, busy = false, url = null, file = null, offerT = null, clipCache = { classic: null, neon: null };
+  const canRecord = () => !!(window.MediaRecorder && HTMLCanvasElement.prototype.captureStream);
+  function pickType(){
+    const t = ["video/mp4;codecs=avc1.42E01E", "video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+    return t.find(x => { try { return MediaRecorder.isTypeSupported(x); } catch(e) { return false; } }) || "";
+  }
+  function offer(scorer, which){
+    if (!canRecord() || REDUCE()) return;
+    // en online solo le sale a quien metió el gol; en el mismo cel, siempre
+    if (S.online && scorer !== S.online.me) return;
+    last = {
+      pts: (S.path || []).slice(-260).map(p => ({ x: p.x, y: p.y })), which, scorer,
+      names: S.P.map(P => P.name), pals: S.P.map(P => P.pal), goals: S.P.map(P => P.goals),
+      leftOwner: S.leftOwner, theme: S.cfg.theme
+    };
+    if (last.pts.length < 6 || busy) return;
+    $("bClip").hidden = false; clearTimeout(offerT); offerT = setTimeout(hideOffer, 15000);
+  }
+  function hideOffer(){ $("bClip").hidden = true; clearTimeout(offerT); }
+  // dibuja la cancha y la chibola con las mismas funciones del juego, pero en el lienzo del clip y parada
+  function drawFrame(g, view, ball, trail){
+    const sv = { V, ctx, ball: S.ball, zoom: S.ballZoom, lo: S.leftOwner, theme: S.cfg.theme, cc: classicCache, nc: neonCache, shake: FX.shake };
+    try {
+      V = view; ctx = g; S.ball = ball; S.ballZoom = 1; S.leftOwner = last.leftOwner; S.cfg.theme = last.theme; FX.shake = 0;
+      classicCache = clipCache.classic; neonCache = clipCache.neon;
+      ctx.setTransform(V.a, V.b, V.c, V.d, V.e, V.f);
+      if (BANDIDO()) drawBoardNeon(); else drawBoard();
+      if (trail.length > 1) drawTrail(trail);
+      drawNails();
+    } finally {
+      clipCache.classic = classicCache; clipCache.neon = neonCache;
+      V = sv.V; ctx = sv.ctx; S.ball = sv.ball; S.ballZoom = sv.zoom; S.leftOwner = sv.lo; S.cfg.theme = sv.theme;
+      classicCache = sv.cc; neonCache = sv.nc; FX.shake = sv.shake;
+    }
+  }
+  function clipView(x, y, w, h){
+    const sv = { V, rot: S.rot, shake: FX.shake };
+    V = { a:1,b:0,c:0,d:1,e:0,f:0, w, h, dpr: 1 }; S.rot = 0; FX.shake = 0;
+    computeView(); const view = V; view.e += x; view.f += y;
+    const inv0 = view.inv; view.inv = (X, Y) => inv0(X - x, Y - y);
+    V = sv.V; S.rot = sv.rot; FX.shake = sv.shake;
+    return view;
+  }
+  function text(g, t, x, y, size, weight, color, maxW){
+    let fs = size; g.font = `${weight} ${fs}px Archivo, "Arial Black", Arial, sans-serif`;
+    while (maxW && g.measureText(t).width > maxW && fs > 14) { fs -= 2; g.font = `${weight} ${fs}px Archivo, "Arial Black", Arial, sans-serif`; }
+    g.fillStyle = color; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(t, x, y);
+  }
+  function fitImg(g, img, cx, cy, maxW, maxH, alpha){
+    if (!img || !img.complete || !img.naturalWidth) return;
+    const k = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
+    g.save(); if (alpha != null) g.globalAlpha = alpha; g.drawImage(img, cx - w/2, cy - h/2, w, h); g.restore();
+  }
+  async function make(){
+    if (busy || !last) return; busy = true; hideOffer();
+    const box = $("clipBox"); box.hidden = false; $("clipActs").hidden = true; $("clipMsg").textContent = "Armando tu gol… 🎬";
+    try {
+      try { await document.fonts.load('900 60px Archivo'); } catch(e) {}
+      const L = last, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+      const board = { x: 10, y: 228, w: W - 20, h: 1040 };
+      const view = clipView(board.x, board.y, board.w, board.h);
+      const logo = document.querySelector(".gamelogo img"), sfLogo = (ADS[0] && (ADS[0].light || ADS[0].img)) || IMG_SF;
+      let sponsor = null; if (CLIP_SPONSOR && CLIP_SPONSOR.img) { sponsor = new Image(); sponsor.src = CLIP_SPONSOR.img; }
+      const P = L.pals[L.scorer], bg = L.theme === "bandido" ? "#07040f" : "#011C25";
+      const link = gameUrl().replace(/^https?:\/\//, "").replace(/\/$/, "");
+      // tiempos: la jugada a velocidad real, el final en cámara lenta, el festejo y la tarjeta de cierre
+      const pts = L.pts, n = pts.length, slowN = Math.min(40, n - 1), fastN = n - 1 - slowN;
+      const tFast = Math.max(0.6, fastN / 60), tSlow = 1.6, tGoal = 1.1, tEnd = 1.9, total = tFast + tSlow + tGoal + tEnd;
+      const posAt = t => {
+        let f = t < tFast ? (t / tFast) * fastN : fastN + Math.min(1, (t - tFast) / tSlow) * slowN;
+        f = Math.min(n - 1, f); const i = Math.floor(f), u = f - i, A = pts[i], B = pts[Math.min(n - 1, i + 1)];
+        return { idx: i, ball: { x: A.x + (B.x - A.x) * u, y: A.y + (B.y - A.y) * u, vx: 0, vy: 0 } };
+      };
+      const confetti = Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: -Math.random() * 400, v: 300 + Math.random() * 500, r: Math.random() * 6.28, s: 6 + Math.random() * 8, c: [P.a, P.b, "#ffffff"][Math.floor(Math.random() * 3)] }));
+      const paint = t => {
+        g.setTransform(1,0,0,1,0,0); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+        const goalT = t - tFast - tSlow, endT = goalT - tGoal;
+        if (endT < 0) {
+          const { idx, ball } = posAt(t);
+          drawFrame(g, view, ball, pts.slice(Math.max(0, idx - 14), idx + 1).concat([ball]));
+          g.setTransform(1,0,0,1,0,0);
+          // encabezado
+          fitImg(g, logo, W/2, 78, 260, 110);
+          text(g, (L.names[0] + "  " + L.goals[0] + " - " + L.goals[1] + "  " + L.names[1]).toUpperCase(), W/2, 182, 34, 800, "#ffffff", W - 60);
+          if (t > tFast && goalT < 0) { g.fillStyle = "rgba(237,27,52,.92)"; g.beginPath(); g.roundRect(W/2 - 110, 214, 220, 34, 17); g.fill(); text(g, "CÁMARA LENTA", W/2, 231, 18, 800, "#ffffff"); }
+          if (goalT >= 0) {
+            const k = Math.min(1, goalT / 0.25);
+            g.fillStyle = `rgba(0,0,0,${0.45 * k})`; g.fillRect(0, 0, W, H);
+            confetti.forEach(p => { const y = p.y + p.v * goalT; g.save(); g.translate(p.x, y); g.rotate(p.r + goalT * 6); g.fillStyle = p.c; g.fillRect(-p.s/2, -p.s/4, p.s, p.s/2); g.restore(); });
+            g.save(); g.translate(W/2, H/2 - 40); const sc = 0.6 + 0.4 * Math.min(1, goalT / 0.2) + 0.05 * Math.sin(goalT * 12); g.scale(sc, sc);
+            text(g, "¡GOOOL!", 0, 0, 130, 900, "#ffffff"); g.restore();
+            const who = L.names[L.scorer] + " · " + P.club.name; g.font = '800 40px Archivo, "Arial Black", Arial, sans-serif';
+            const ww = Math.min(W - 80, g.measureText(who).width + 60);
+            g.fillStyle = P.a; g.beginPath(); g.roundRect(W/2 - ww/2, H/2 + 30, ww, 64, 32); g.fill();
+            g.strokeStyle = P.b; g.lineWidth = 4; g.stroke();
+            const lum = (h => { const n = parseInt(h.slice(1), 16); return ((n >> 16) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114) / 255; })(P.a);
+            text(g, who, W/2, H/2 + 62, 36, 800, lum > 0.6 ? "#111111" : "#ffffff", ww - 30);
+          }
+        } else {
+          // tarjeta de cierre: marca, link y patrocinador
+          const k = Math.min(1, endT / 0.3);
+          g.globalAlpha = k;
+          fitImg(g, logo, W/2, 330, 420, 260);
+          text(g, "¿Te la creés? Jugá vos también", W/2, 560, 40, 800, "#ffffff", W - 80);
+          g.fillStyle = "#ED1B34"; g.beginPath(); g.roundRect(70, 610, W - 140, 86, 43); g.fill();
+          text(g, link, W/2, 653, 34, 800, "#ffffff", W - 180);
+          fitImg(g, sfLogo, W/2, 860, 360, 150);
+          if (sponsor) { text(g, "Presentado por", W/2, 1010, 22, 600, "rgba(227,232,234,.7)"); fitImg(g, sponsor, W/2, 1100, 300, 120); }
+          g.globalAlpha = 1;
+        }
+      };
+      paint(0);
+      const type = pickType(), stream = c.captureStream(FPS);
+      const rec = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 4_000_000 } : { videoBitsPerSecond: 4_000_000 });
+      const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      const done = new Promise(res => rec.onstop = res);
+      rec.start(250);
+      const t0 = performance.now();
+      await new Promise(res => {
+        const step = () => {
+          const t = (performance.now() - t0) / 1000;
+          paint(Math.min(t, total));
+          $("clipMsg").textContent = "Armando tu gol… " + Math.min(99, Math.round(t / total * 100)) + "%";
+          if (t < total + 0.2) requestAnimationFrame(step); else res();
+        };
+        requestAnimationFrame(step);
+      });
+      rec.stop(); await done; stream.getTracks().forEach(tr => tr.stop());
+      const mime = (rec.mimeType || type || "video/webm").split(";")[0], ext = mime.includes("mp4") ? "mp4" : "webm";
+      const blob = new Blob(chunks, { type: mime });
+      if (url) URL.revokeObjectURL(url);
+      url = URL.createObjectURL(blob);
+      file = new File([blob], "gol-futbolito." + ext, { type: mime });
+      $("clipSave").href = url; $("clipSave").download = "gol-futbolito." + ext;
+      $("clipShare").hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
+      $("clipMsg").textContent = "¡Tu gol está listo!"; $("clipActs").hidden = false;
+    } catch(e) {
+      $("clipMsg").textContent = "No se pudo armar el clip en este cel."; setTimeout(() => { $("clipBox").hidden = true; }, 3000);
+    } finally { busy = false; }
+  }
+  $("bClip").onclick = e => { e.stopPropagation(); make(); };
+  $("clipShare").onclick = async e => {
+    e.stopPropagation();
+    try { await navigator.share({ files: [file], text: "¡Mirá este golazo en el Futbolito Súper Fútbol! Jugá aquí: " + gameUrl() }); } catch(x) {}
+  };
+  $("clipSave").onclick = e => e.stopPropagation();
+  $("clipClose").onclick = e => { e.stopPropagation(); $("clipBox").hidden = true; };
+  ["bClip", "clipBox"].forEach(id => $(id).addEventListener("pointerdown", e => e.stopPropagation()));
+  return { offer, hideOffer, make };
+})();
 // =================== ONLINE (Supabase) ===================
 const SB = { url: "https://goklhzerstkkaehmpfyg.supabase.co", key: "sb_publishable_re4ecoplq9VsrbgVHh1Epw_xo0rpZit",
   js: "./supabase.js" };
