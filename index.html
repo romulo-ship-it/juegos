@@ -511,7 +511,7 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
             <div class="row ojoin"><input type="email" id="oEmail" placeholder="Tu correo" autocomplete="email" aria-label="Correo"><button class="btn ghost" id="oSend" type="button">Pedir código</button></div>
             <div class="row ojoin" id="oOtpRow" hidden><input type="text" id="oOtp" inputmode="numeric" maxlength="8" placeholder="Código del correo" autocomplete="one-time-code" aria-label="Código del correo"><button class="btn ghost" id="oVerify" type="button">Entrar</button></div>
           </div>
-          <div id="oRankedBox" hidden><p class="note" id="oWho"></p><div class="row"><button class="btn" id="oRanked" type="button">Buscar rival</button><button class="btn ghost" id="oFan" type="button">Mi ficha</button></div><button class="btn ghost" id="oSignOut" type="button">Salir de la cuenta</button></div>
+          <div id="oRankedBox" hidden><p class="note" id="oWho"></p><div class="row"><button class="btn" id="oRanked" type="button">Buscar rival</button><button class="btn ghost" id="oRankedCode" type="button">Retar con código</button></div><div class="row"><button class="btn ghost" id="oFan" type="button">Mi ficha</button><button class="btn ghost" id="oSignOut" type="button">Salir de la cuenta</button></div><p class="note">Para retar a un amigo, él también necesita cuenta. Entre los mismos dos cuentan hasta 3 clasificatorias por día.</p></div>
         </div>
         <div class="status" id="oStatus" aria-live="polite"></div>
         <button class="btn" id="oResume" type="button" hidden>Volver a mi partida</button>
@@ -1671,7 +1671,7 @@ function endMatch(reason){
   resetSurvey();
   $("bRematch").hidden = false; $("bRematch").textContent = "Revancha";
   if (S.online) OL.ended();
-  $("endNote").textContent = S.online ? (S.online.kind === "clasificatoria" ? "Clasificatoria: suma al ranking." : "Solo de meque: no suma al ranking.") : S.cfg.cpu ? `Contra la máquina, nivel ${LEVEL_NAME[S.cfg.level] || "normal"}: no suma al ranking.` : "Charamusca en vivo: no suma al ranking.";
+  $("endNote").textContent = S.online ? (S.online.kind === "clasificatoria" ? "Clasificatoria: suma al ranking." : "Solo de meque: no suma al ranking. Para que cuente, jueguen la Clasificatoria con cuenta (podés retar a tu amigo con código).") : S.cfg.cpu ? `Contra la máquina, nivel ${LEVEL_NAME[S.cfg.level] || "normal"}: no suma al ranking.` : "Charamusca en vivo: no suma al ranking.";
   $("sendBox").hidden = !SHEET_URL; $("sendNote").textContent = "Se abre una pestaña que confirma el envío. Después volvé al juego.";
   const [a,b] = S.P;
   $("fn0").textContent = a.name; $("fn1").textContent = b.name;
@@ -2119,7 +2119,12 @@ const OL = (() => {
     code = (code || "").trim().toUpperCase(); if (code.length !== 6) throw new Error("El código tiene 6 letras");
     await ensureGuest(); await ensureProfile();
     const c = await client(); const { data, error } = await c.rpc("join_match", { p_code: code });
-    if (error) throw error; lobby(data, "Solo de meque"); await watch(data);
+    if (error) {
+      if (/ficha/i.test(error.message)) return openFan(() => join(code));
+      if (/pide cuenta/i.test(error.message)) throw new Error("Esa sala es de clasificatoria: entrá con tu correo en la parte de abajo y volvé a tocar Unirme.");
+      throw error;
+    }
+    lobby(data, data.kind === "clasificatoria" ? "Clasificatoria · con código" : "Solo de meque"); await watch(data);
   }
   async function ranked(){
     const s = await session(); if (isGuest(s)) throw new Error("La clasificatoria pide cuenta");
@@ -2127,6 +2132,15 @@ const OL = (() => {
     await ensureProfile();
     const c = await client(); const { data, error } = await c.rpc("find_ranked");
     if (error) throw error; lobby(data, "Clasificatoria"); await watch(data);
+  }
+  async function rankedCode(){
+    const s = await session(); if (isGuest(s)) throw new Error("La clasificatoria pide cuenta");
+    if (!myFan && !(await loadFan())) return openFan(rankedCode);
+    await ensureProfile();
+    const c = await client(); const { data, error } = await c.rpc("create_ranked_room", { p_theme: S.cfg.theme || "clasica" });
+    if (error) throw error; lobby(data, "Clasificatoria · con código");
+    $("lNote").textContent = "Mandale este código a tu amigo. Él tiene que entrar con su cuenta: esta partida suma al ranking.";
+    await watch(data);
   }
   async function sendCode(){
     const email = $("oEmail").value.trim(); if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Escribí un correo válido");
@@ -2371,6 +2385,7 @@ const OL = (() => {
   $("oSend").onclick = e => busy(e.currentTarget, sendCode);
   $("oVerify").onclick = e => busy(e.currentTarget, verify);
   $("oRanked").onclick = e => busy(e.currentTarget, ranked);
+  $("oRankedCode").onclick = e => busy(e.currentTarget, rankedCode);
   $("oSignOut").onclick = e => busy(e.currentTarget, async () => { const c = await client(); await c.auth.signOut(); myFan = null; await refreshAcct(); st("oStatus", "Saliste de la cuenta."); });
   $("lCancel").onclick = () => cancelLobby();
   $("lCopy").onclick = () => { const t = $("lCode").textContent; try { navigator.clipboard.writeText(t); st("lStatus", "Código copiado"); } catch(e) {} };
