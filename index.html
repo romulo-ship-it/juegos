@@ -861,7 +861,27 @@ function palette(i){
 
 // ---------- Audio ----------
 let AC = null, lastPing = 0;
-function audio(){ if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } if (AC && AC.state==="suspended") AC.resume(); }
+// En iPhone: que suene aunque el cel esté en silencio (como un video), no como un tono de aviso
+try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch(e) {}
+let acStuck = false;
+function audio(){
+  // si el sonido quedó trabado al volver de otra app, se arma uno nuevo dentro del toque
+  if (AC && acStuck) { try { AC.close(); } catch(e) {} AC = null; acStuck = false; }
+  if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+  if (!AC) return;
+  if (AC.state !== "running") { try { AC.resume(); } catch(e){} }
+  // un sonido mudo dentro del toque termina de desbloquear el audio en iPhone
+  try { const b = AC.createBuffer(1, 1, 22050), src = AC.createBufferSource(); src.buffer = b; src.connect(AC.destination); src.start(0); } catch(e) {}
+  const ctx = AC; setTimeout(() => { if (AC === ctx && ctx.state !== "running") acStuck = true; }, 400);
+}
+// Los cels solo dejan sonar después de un toque, y apagan el sonido al salir a otra app (por ejemplo WhatsApp):
+// cualquier toque vuelve a encenderlo
+["pointerdown","touchend","keydown","click"].forEach(ev => document.addEventListener(ev, () => { if (!AC || AC.state !== "running" || acStuck) audio(); }, { capture: true, passive: true }));
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden || !AC) return;
+  try { AC.resume(); } catch(e) {}
+  const ctx = AC; setTimeout(() => { if (AC === ctx && ctx.state !== "running") acStuck = true; }, 400);
+});
 function tone(f, dur, type="sine", vol=0.2, when=0, f2){
   if (!AC || !S.sound) return; const t = AC.currentTime + when;
   const o = AC.createOscillator(), g = AC.createGain(); o.type=type; o.frequency.setValueAtTime(f,t);
