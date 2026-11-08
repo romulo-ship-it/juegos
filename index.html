@@ -74,6 +74,7 @@ button{font-family:inherit;color:inherit}
 #turnbar.low i{background:var(--red)}
 #stage{position:relative;flex:1 1 auto;min-height:0}
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#bSnd{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:6;border:0;border-radius:999px;padding:9px 16px;font:600 14px/1 inherit;font-family:inherit;background:#111c;color:#fff;box-shadow:0 4px 14px #0005}
 #tools{position:absolute;top:6px;right:max(6px, env(safe-area-inset-right,0px));display:flex;gap:6px;z-index:3}
 .ic{width:38px;height:38px;border-radius:50%;border:1px solid var(--wood-lt);background:rgba(20,12,7,.75);display:grid;place-items:center;cursor:pointer}
 .ic svg{width:18px;height:18px;fill:none;stroke:var(--chalk);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -349,7 +350,7 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
 #fStatus{color:rgba(227,232,234,.8);font-weight:500}
 /* clip del gol */
 #bClip{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:7;width:auto;padding:12px 16px;font-size:.95rem;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-#clipBox{position:absolute;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:8;background:rgba(6,20,26,.94);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;align-items:center;min-width:260px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+#clipBox{position:absolute;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:30;background:rgba(6,20,26,.94);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;align-items:center;min-width:260px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 #clipBox .row{gap:8px;flex-wrap:nowrap}#clipBox .btn{width:auto;padding:10px 14px}
 #clipMsg{font-size:.9rem;font-weight:600}
 #survey,#sendBox,#bData{display:none!important}
@@ -372,6 +373,7 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
       <button class="ic" id="bPause" aria-label="Pausa"><svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg></button>
     </div>
     <div id="hint" hidden></div>
+    <button id="bSnd" type="button" hidden>🔇 Tocá aquí para el sonido</button>
     <button class="btn" id="bClaim" type="button" hidden>Reclamar victoria</button>
     <button class="btn" id="bClip" type="button" hidden>🎬 Guardar mi gol</button>
     <div id="clipBox" hidden><span id="clipMsg">Armando tu gol…</span><div class="row" id="clipActs" hidden><button class="btn" id="clipShare" type="button">Compartir</button><a class="btn ghost" id="clipSave" download>Guardar</a><button class="btn ghost" id="clipClose" type="button" aria-label="Cerrar">✕</button></div></div>
@@ -496,6 +498,7 @@ table.rank .sw{display:inline-block;width:10px;height:10px;border-radius:50%;mar
           <p class="note" id="sendNote">Se abre una pestaña que confirma el envío. Después volvé al juego.</p>
         </div>
         <button class="btn" id="bShareCard" type="button">Compartir resultado<small>Imagen para historias y WhatsApp</small></button>
+        <button class="btn ghost" id="bClipEnd" type="button" hidden>🎬 Guardar el gol del triunfo</button>
         <div class="row"><button class="btn ghost" id="bMenu">Menú</button><button class="btn" id="bRematch">Revancha</button></div>
       </div>
     </section>
@@ -870,25 +873,37 @@ function palette(i){
 let AC = null, lastPing = 0;
 // En iPhone: que suene aunque el cel esté en silencio (como un video), no como un tono de aviso
 try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch(e) {}
-let acStuck = false;
+let acMade = 0, acTry = 0;
+function newAC(){
+  if (acMade >= 4) return; // iPhone deja pocos; no los gastamos
+  try { AC = new (window.AudioContext||window.webkitAudioContext)(); acMade++; } catch(e) { AC = null; return; }
+  try { AC.onstatechange = sndPill; } catch(e) {}
+}
+// Solo dentro de un toque real del jugador (iPhone no deja encender el audio de otra forma)
 function audio(){
-  // si el sonido quedó trabado al volver de otra app, se arma uno nuevo dentro del toque
-  if (AC && acStuck) { try { AC.close(); } catch(e) {} AC = null; acStuck = false; }
-  if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+  if (AC && AC.state === "closed") AC = null;
+  if (!AC) newAC();
   if (!AC) return;
-  if (AC.state !== "running") { try { AC.resume(); } catch(e){} }
+  if (AC.state !== "running") {
+    const ctx = AC, n = ++acTry;
+    try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch(e) {}
+    // si tras varios toques sigue mudo (pasa al volver de WhatsApp), se arma uno nuevo dentro del toque
+    setTimeout(() => { if (AC === ctx && n === acTry && ctx.state !== "running" && acTry >= 3) { try { ctx.close(); } catch(e) {} AC = null; acTry = 0; } }, 1500);
+  } else acTry = 0;
   // un sonido mudo dentro del toque termina de desbloquear el audio en iPhone
   try { const b = AC.createBuffer(1, 1, 22050), src = AC.createBufferSource(); src.buffer = b; src.connect(AC.destination); src.start(0); } catch(e) {}
-  const ctx = AC; setTimeout(() => { if (AC === ctx && ctx.state !== "running") acStuck = true; }, 400);
 }
 // Los cels solo dejan sonar después de un toque, y apagan el sonido al salir a otra app (por ejemplo WhatsApp):
-// cualquier toque vuelve a encenderlo
-["pointerdown","touchend","keydown","click"].forEach(ev => document.addEventListener(ev, () => { if (!AC || AC.state !== "running" || acStuck) audio(); }, { capture: true, passive: true }));
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden || !AC) return;
-  try { AC.resume(); } catch(e) {}
-  const ctx = AC; setTimeout(() => { if (AC === ctx && ctx.state !== "running") acStuck = true; }, 400);
-});
+// cualquier toque de verdad lo vuelve a encender (los clics automáticos del juego no cuentan)
+["pointerdown","touchend","keydown","click"].forEach(ev => document.addEventListener(ev, e => { if (e.isTrusted && (!AC || AC.state !== "running")) audio(); }, { capture: true, passive: true }));
+document.addEventListener("visibilitychange", () => { if (!document.hidden && AC && AC.state !== "running") { try { const p = AC.resume(); if (p && p.catch) p.catch(() => {}); } catch(e) {} } sndPill(); });
+// Aviso pequeño si el sonido quedó apagado a media partida: un toque y vuelve
+function sndPill(){
+  const el = document.getElementById("bSnd"); if (!el) return;
+  const off = !!(S && S.sound && AC && AC.state !== "running" && S.phase !== "menu");
+  el.hidden = !off;
+}
+setInterval(sndPill, 1500);
 function tone(f, dur, type="sine", vol=0.2, when=0, f2){
   if (!AC || !S.sound) return; const t = AC.currentTime + when;
   const o = AC.createOscillator(), g = AC.createGain(); o.type=type; o.frequency.setValueAtTime(f,t);
@@ -1512,6 +1527,7 @@ function setupPlayers(){
   S.P = [0,1].map(i => ({ name: S.cfg.names[i] || `Jugador ${i+1}`, pal: palette(i), goals:0, shots:0, bounces:0, lost:0 }));
 }
 function startMatch(){
+  $("bClipEnd").hidden = true;
   if (S.m && !S.m.ended) saveMatch(S.m, false);
   setupPlayers();
   S.m = { id: Date.now().toString(36), at: new Date().toISOString(), physics: C.version, mode: S.cfg.mode, target: S.cfg.mode==="goals" ? S.cfg.goals : null,
@@ -1675,6 +1691,7 @@ function endPeriod(){
 }
 
 function endMatch(reason){
+  setTimeout(() => CLIP.offerEnd(), 0);
   S.phase = "end"; S.endReason = reason; hint(null); $("power").hidden = true; talkOpen(false);
   if (S.m) { S.m.ended = true; S.m.reason = reason; S.m.score = [S.P[0].goals, S.P[1].goals]; saveMatch(S.m, true); }
   resetSurvey();
@@ -1950,6 +1967,7 @@ $("tossPick").querySelectorAll("button").forEach(b => b.onclick = () => {
   }, delay);
 });
 $("bStart").onclick = () => startMatch();
+$("bSnd").onclick = () => { audio(); setTimeout(sndPill, 300); };
 
 $("bPause").onclick = () => { if (S.phase === "menu" || S.phase === "end") return; if (S.online) { if (S.phase === "aim" || S.phase === "sim") OL.askLeave(); return; } S.paused = true; drag = null; S.aim = null; $("power").hidden = true; show("scrPause"); };
 $("bResume").onclick = () => { S.paused = false; last = performance.now(); show(null); };
@@ -1961,7 +1979,7 @@ $("bResume").onclick = () => { if (S.pauseAt) { const d = performance.now() - S.
 $("bQuit").onclick = () => toMenu();
 $("bMenu").onclick = () => toMenu();
 $("bRematch").onclick = () => { if (S.online) return OL.rematch(); S.tossWinner = 1 - S.tossWinner; startMatch(); };
-function toMenu(){ if (S.online) OL.close(); clearTalk(); S.aiTok = (S.aiTok || 0) + 1; if (S.m && !S.m.ended) { saveMatch(S.m, false); } S.m = null; S.phase = "menu"; S.paused = false; $("hud").hidden = true; $("tools").hidden = true; hint(null); $("power").hidden = true; S.ball = FC.newBall(); S.rot = S.rotTarget = 0; setupPreview(); show("scrHome"); requestAnimationFrame(()=>{resize();}); }
+function toMenu(){ $("bClipEnd").hidden = true; if (S.online) OL.close(); clearTalk(); S.aiTok = (S.aiTok || 0) + 1; if (S.m && !S.m.ended) { saveMatch(S.m, false); } S.m = null; S.phase = "menu"; S.paused = false; $("hud").hidden = true; $("tools").hidden = true; hint(null); $("power").hidden = true; S.ball = FC.newBall(); S.rot = S.rotTarget = 0; setupPreview(); show("scrHome"); requestAnimationFrame(()=>{resize();}); }
 $("bSound").onclick = () => { S.sound = !S.sound; $("sndWave").style.display = S.sound ? "" : "none"; $("bSound").setAttribute("aria-label", S.sound ? "Silenciar sonido" : "Activar sonido"); };
 
 
@@ -2112,6 +2130,13 @@ const CLIP = (() => {
     } finally { busy = false; }
   }
   $("bClip").onclick = e => { e.stopPropagation(); make(); };
+  // el gol que cierra el partido: la pantalla final tapa el botón, así que se ofrece ahí mismo
+  function offerEnd(){
+    hideOffer();
+    const b = $("bClipEnd"); b.hidden = !(last && canRecord() && !busy && last.goals[last.scorer] === S.P[last.scorer].goals);
+    if (!b.hidden) b.textContent = "🎬 Guardar el gol de " + last.names[last.scorer];
+  }
+  $("bClipEnd").onclick = e => { e.stopPropagation(); $("bClipEnd").hidden = true; make(); };
   $("clipShare").onclick = async e => {
     e.stopPropagation();
     try { await navigator.share({ files: [file], text: "¡Mirá este golazo en el Futbolito Súper Fútbol! Jugá aquí: " + gameUrl() }); } catch(x) {}
@@ -2119,7 +2144,7 @@ const CLIP = (() => {
   $("clipSave").onclick = e => e.stopPropagation();
   $("clipClose").onclick = e => { e.stopPropagation(); $("clipBox").hidden = true; };
   ["bClip", "clipBox"].forEach(id => $(id).addEventListener("pointerdown", e => e.stopPropagation()));
-  return { offer, hideOffer, make };
+  return { offer, hideOffer, make, offerEnd };
 })();
 // =================== ONLINE (Supabase) ===================
 const SB = { url: "https://goklhzerstkkaehmpfyg.supabase.co", key: "sb_publishable_re4ecoplq9VsrbgVHh1Epw_xo0rpZit",

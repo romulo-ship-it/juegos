@@ -1,5 +1,5 @@
-// Futbolito Súper Fútbol · versión 1.9.0
-const CACHE = "futbolito-1.9.0";
+// Futbolito Súper Fútbol · versión 1.9.2
+const CACHE = "futbolito-1.9.2";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png",
   "maskable-512.png", "apple-touch-icon.png", "archivo.woff2", "favicon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
